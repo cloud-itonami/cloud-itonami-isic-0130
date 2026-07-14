@@ -1,0 +1,15 @@
+*.class
+*.jar
+*.war
+.DS_Store
+.nrepl-port
+.cpcache
+.cljs_node_modules
+node_modules
+target
+dist
+.shadow-cljs
+.clj-kondo
+*.swp
+*.swo
+*~
