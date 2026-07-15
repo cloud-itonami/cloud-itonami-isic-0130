@@ -1,0 +1,12 @@
+{:itonami.blueprint/id "cloud-itonami-0130"
+ :itonami.blueprint/name "Plant Propagation Nursery Operations Coordination"
+ :itonami.blueprint/isic-rev5 "0130"
+ :itonami.blueprint/domain :agriculture/plant-propagation
+ :itonami.blueprint/license "AGPL-3.0-or-later"
+ :itonami.blueprint/social-impact [:food-security :plant-health :biosecurity :fair-labor]
+ :itonami.blueprint/governor :nursery-operations-governor
+ :itonami.blueprint/robotics false
+ :itonami.blueprint/required-technologies [:identity :forms :dmn :bpmn :audit-ledger :telemetry]
+ :itonami.blueprint/optional-technologies [:optimization]
+ :itonami.blueprint/status :public-oss
+ :itonami.blueprint/maturity :blueprint}

@@ -1,48 +1,50 @@
 (ns propagation.phase
-  "Phase-based rollout gates for propagation operations. Each phase
-  (0 = demo, 1 = internal pilot, 2 = supervised ops, 3 = full) gates
-  which operations can commit vs. escalate.")
+  "Phase machine: the states a plant-propagation-nursery batch transits
+  through.
 
-(def default-phase 0)
+  State machine:
+    :intake -> :propagate -> :root -> :harden -> :inspect -> :audit -> :archived
 
-(def phase-names
-  {0 :demo
-   1 :pilot
-   2 :supervised
-   3 :full})
+  `:intake` is propagation-source receiving and batch registration;
+  `:propagate` is the propagation event itself (taking cuttings,
+  grafting, initiating tissue culture, or sowing seed); `:root` is the
+  rooting/establishment period; `:harden` is the hardening-off phase
+  (acclimatizing propagules to ambient conditions before sale/
+  transplant); `:inspect` is rooting-rate/genetic-fidelity/phytosanitary
+  testing; `:audit` is compliance audit; `:archived` is the terminal
+  state.
 
-(defn verdict->disposition
-  "Converts governor verdict into base disposition (no phase override yet).
-  HARD holds -> :hold. Empty soft-flags -> :commit. Soft-flags -> :escalate."
-  [verdict]
-  (cond
-    (seq (:hard-holds verdict)) :hold
-    (seq (:soft-flags verdict)) :escalate
-    :else :commit))
+  Each transition can accept a proposal and yield an audit fact.")
 
-(defn gate
-  "Applies phase-based gating to a base disposition. Phase 0/1 escalate
-  almost everything; phase 2 commits if governor approves; phase 3 is
-  full autonomy (no additional gatekeeping)."
-  [phase request base-disposition]
-  (case phase
-    0 (if (= base-disposition :hold)
-        {:disposition :hold :reason :demo-phase}
-        {:disposition :escalate :reason :demo-phase})
+(def all-phases
+  "All valid phases in the plant-propagation-nursery workflow."
+  [:intake :propagate :root :harden :inspect :audit :archived])
 
-    1 (if (= base-disposition :hold)
-        {:disposition :hold :reason :pilot-phase}
-        {:disposition :escalate :reason :pilot-phase})
+(def phase-sequence
+  "Ordered phases representing normal batch progression."
+  [:intake :propagate :root :harden :inspect :audit :archived])
 
-    2 (case base-disposition
-        :hold {:disposition :hold :reason :governor-hold}
-        :escalate {:disposition :escalate :reason :governor-escalate}
-        :commit {:disposition :commit})
+(defn valid-phase?
+  "Check if a phase is valid."
+  [phase]
+  (contains? (set all-phases) phase))
 
-    3 (case base-disposition
-        :hold {:disposition :hold :reason :governor-hold}
-        :escalate {:disposition :escalate :reason :governor-escalate}
-        :commit {:disposition :commit})
+(defn- index-of
+  "Portable (Clojure/ClojureScript) index lookup -- `.indexOf` is a
+  JVM-only `java.util.List` method that ClojureScript's PersistentVector
+  does not implement, so it is avoided here even though `phase-sequence`
+  is a plain vector. Returns -1 when `x` is not found, matching
+  `java.util.List/indexOf`'s contract."
+  [coll x]
+  (or (first (keep-indexed (fn [i v] (when (= v x) i)) coll)) -1))
 
-    ;; default: conservative -- escalate
-    {:disposition :escalate :reason :unknown-phase}))
+(defn can-transition?
+  "Check if a transition from one phase to another is valid
+  (must be forward-only in the sequence, no backtracking). Always returns a
+  boolean (never nil), including when either phase is invalid."
+  [from-phase to-phase]
+  (boolean
+   (and (valid-phase? from-phase) (valid-phase? to-phase)
+        (let [from-idx (index-of phase-sequence from-phase)
+              to-idx (index-of phase-sequence to-phase)]
+          (and (>= from-idx 0) (>= to-idx 0) (< from-idx to-idx))))))
