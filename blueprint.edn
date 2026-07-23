@@ -1,4 +1,4 @@
-{:itonami.blueprint/id "cloud-itonami-0130"
+{:itonami.blueprint/id "cloud-itonami-isic-0130"
  :itonami.blueprint/name "Plant Propagation Nursery Operations Coordination"
  :itonami.blueprint/isic-rev5 "0130"
  :itonami.blueprint/domain :agriculture/plant-propagation
