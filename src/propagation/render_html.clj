@@ -46,7 +46,8 @@
 
   Usage: `clojure -M:dev:render-html [out-file]`
   (default `docs/samples/operator-console.html`)."
-  (:require [clojure.string :as str]
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]
             [jp-go-dds.skin]
             [propagation.facts :as facts]
             [propagation.governor :as governor]
@@ -539,11 +540,92 @@
    :approval-granted "<span class=\"ok\">approval-granted</span>"
    :approval-refused "<span class=\"critical\">approval-refused</span>"})
 
-(defn- ledger-row [{:keys [t op subject actor approver confidence basis]}]
+(def ^:private approval-fact-types
+  "The fact types this actor writes that carry a human decision, and are
+  therefore the ones on which an approver identity is meaningful."
+  #{:approval-granted :approval-refused})
+
+(defn- approver-retention
+  "MEASURED at render time, never asserted.
+
+  Several sibling cloud-itonami actors have a store whose commit path
+  destructures a narrower key than the caller wrote and so silently
+  DROPS the approver identity. When that happens a reader of the console
+  cannot distinguish `nobody approved this` from `the store dropped who
+  approved it` -- so the console must not simply omit an absent approver,
+  it has to say which of the two it is.
+
+  Rather than hardcode a claim about this repo (a hardcoded claim becomes
+  a lie the moment somebody changes `propagation.store`), this probes the
+  REAL ledger that was just read back out of the store, and the
+  disclosure rendered from it flips automatically if the store's
+  behaviour ever changes in either direction.
+
+  Returns:
+    :approval-facts  how many human-decision facts the run produced
+    :with-approver   how many of those still carry `:approver` on readback
+    :ledger-retains? approver survives the ledger round-trip
+    :record-retains? the BATCH record itself (not just the audit fact)
+                     carries the approver -- a strictly stronger property,
+                     and a separate question from the ledger one."
+  [ledger batches]
+  (let [approval-facts (filter #(approval-fact-types (:t %)) ledger)
+        named (filter #(some? (:approver %)) approval-facts)
+        approved-subjects (into #{} (map :subject) approval-facts)
+        record-named (filter (fn [[id b]]
+                               (and (approved-subjects id) (some? (:approver b))))
+                             batches)]
+    {:approval-facts  (count approval-facts)
+     :with-approver   (count named)
+     :ledger-retains? (and (seq approval-facts)
+                           (= (count named) (count approval-facts)))
+     :record-retains? (and (seq approved-subjects)
+                           (= (count record-named) (count approved-subjects)))}))
+
+(defn- approver-disclosure
+  "Prose rendered from the MEASURED `approver-retention` result above."
+  [{:keys [approval-facts with-approver ledger-retains? record-retains?]}]
+  (str
+   "<p class=\"muted\"><strong>Approver attribution (measured on this run, not asserted):</strong> "
+   "this scenario produced " (esc approval-facts)
+   " human-decision fact(s); " (esc with-approver)
+   " of them still carried an <code>:approver</code> when read back out of the store. "
+   (if ledger-retains?
+     (str "<span class=\"ok\">The audit ledger retains the approver</span> — "
+          "<code>propagation.store/append-fact</code> appends the whole fact map, "
+          "so the identity survives the round-trip and the <em>Approver</em> column below "
+          "is read from the store, not from the scenario input. ")
+     (str "<span class=\"critical\">The audit ledger DROPS the approver</span> — "
+          "the identity shown in the <em>Approver</em> column is therefore "
+          "<em>audit only — not retained in record</em>, joined from the run trace "
+          "rather than read back from the store. "))
+   (if record-retains?
+     "The batch record itself also carries the approver."
+     (str "<span class=\"warn\">The batch record itself carries no approver field</span> — "
+          "<code>store/log-batch</code> and <code>store/finalize-shipment</code> set only the "
+          "<code>:logged?</code> / <code>:shipment-finalized?</code> flags, so "
+          "<em>who</em> signed a batch off is answerable only from the ledger, never from the "
+          "batch row. That is a real limitation of this store, stated here because it was "
+          "observed, and this sentence will change on its own if the store starts recording it."))
+   "</p>\n"))
+
+(defn- approver-attribution-cell
+  "The Approver column. An approval-bearing fact that came back WITHOUT an
+  approver is labelled explicitly rather than blanked, so `nobody
+  approved` and `the store dropped it` never render the same way."
+  [{:keys [t approver]}]
+  (cond
+    (some? approver) (str "<code>" (esc approver) "</code>")
+    (approval-fact-types t)
+    "<span class=\"critical\">(audit only — not retained in record)</span>"
+    :else "<span class=\"muted\">—</span>"))
+
+(defn- ledger-row [{:keys [t op subject actor confidence basis] :as fact}]
   (str "        <tr><td>" (get fact-cell t (esc (kw-name t))) "</td>"
        "<td><code>" (esc (kw-name op)) "</code></td>"
        "<td><code>" (esc subject) "</code></td>"
-       "<td><code>" (esc (or approver actor)) "</code></td>"
+       "<td><code>" (esc actor) "</code></td>"
+       "<td>" (approver-attribution-cell fact) "</td>"
        "<td>" (num-cell confidence) "</td>"
        "<td>" (rules-cell basis) "</td></tr>"))
 
@@ -637,8 +719,9 @@
      "  <section class=\"card\">\n"
      "    <h2>Audit ledger (this run)</h2>\n"
      "    <p class=\"muted\">Append-only decision-fact log held in the store's <code>:facts</code> vector. Rows with an empty basis are escalate-only verdicts — <code>propagation.operation</code> routes both hard and escalate verdicts through <code>hold-fact-fn</code> today, and the caller distinguishes them by the verdict's <code>:hard?</code> flag.</p>\n"
+     "    " (approver-disclosure (approver-retention ledger (:batches store)))
      "    <table>\n"
-     "      <thead><tr><th>Fact</th><th>Op</th><th>Batch</th><th>Actor / approver</th><th>Confidence</th><th>Basis</th></tr></thead>\n"
+     "      <thead><tr><th>Fact</th><th>Op</th><th>Batch</th><th>Actor</th><th>Approver</th><th>Confidence</th><th>Basis</th></tr></thead>\n"
      "      <tbody>\n"
      (str/join "\n" (map ledger-row ledger)) "\n"
      "      </tbody>\n"
@@ -652,13 +735,52 @@
      "</footer>\n"
      "</body></html>\n")))
 
+(defn- hard-hold-facts
+  "The `:governor-hold` facts that carry at least one rule -- i.e. the ones
+  the Governor refused on a HARD violation, as distinct from the
+  escalate-only verdicts that reach the same fact type with an empty
+  `:basis`."
+  [ledger]
+  (filter #(and (= :governor-hold (:t %)) (seq (:basis %))) ledger))
+
+(defn- assert-hard-holds!
+  "BUILD-TIME INVARIANT, not a comment.
+
+  The whole point of this console is to show a Governor that actually
+  refuses things, so a run that produced no HARD hold has not demonstrated
+  anything and MUST NOT be allowed to write a plausible-looking page. This
+  is the failure mode that silently turns a demo into theatre: the page
+  still renders, the tables still fill, and nothing tells the reader that
+  every gate happened to pass.
+
+  Throws unless the REAL Governor output contains at least one
+  `:governor-hold` fact with a non-empty `:basis`."
+  [ledger]
+  (let [hard (hard-hold-facts ledger)
+        rules (into (sorted-set) (mapcat :basis) hard)]
+    (when (empty? hard)
+      (throw (ex-info
+              (str "Refusing to write docs/samples/operator-console.html: the run "
+                   "produced ZERO hard governor holds, so the page would assert a "
+                   "governed pipeline it never actually exercised. Either the "
+                   "scenario stopped triggering violations or propagation.governor "
+                   "stopped raising them -- fix that before regenerating.")
+              {:ledger-facts (count ledger)
+               :governor-holds (count (filter #(= :governor-hold (:t %)) ledger))
+               :hard-holds 0})))
+    {:hard-holds (count hard) :hard-hold-rules rules}))
+
 (defn -main [& args]
   (let [out (or (first args) "docs/samples/operator-console.html")
         run (run-demo!)
         ledger (store/audit-trail (:store run))
-        hard (count (filter #(and (= :governor-hold (:t %)) (seq (:basis %))) ledger))
+        {:keys [hard-holds hard-hold-rules]} (assert-hard-holds! ledger)
+        hard hard-holds
         html (render run)]
+    (io/make-parents out)
     (spit out html)
+    (println "hard-hold rules exercised:" (count hard-hold-rules)
+             (mapv kw-name hard-hold-rules))
     (println "wrote" out "(" (count (:trace run)) "proposals,"
              (count ledger) "ledger facts,"
              hard "hard holds,"
