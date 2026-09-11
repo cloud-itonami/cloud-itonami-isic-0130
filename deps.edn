@@ -19,7 +19,7 @@
         io.github.kotoba-lang/langgraph
         {:local/root "../../kotoba-lang/langgraph"}}}
   :run {:main-opts ["-m" "propagation.sim"]}
-  ;; clojure -M:dev:render-html [out-file] -> regenerate
+  ;; kbb -M:dev:render-html [out-file] -> regenerate
   ;; docs/samples/operator-console.html by actually running the Governor /
   ;; OperationActor / store over the demo scenario (flagship checklist item 2).
   :render-html {:main-opts ["-m" "propagation.render-html"]}

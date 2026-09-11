@@ -4,7 +4,7 @@
   Closes flagship checklist item 2 for this repo: before this namespace
   existed there was no demo page and no generator at all -- and, unlike
   most sibling cloud-itonami actors, `propagation.sim` here is still a
-  stub (`clojure -M:dev:run` prints \"not yet implemented\"), so there
+  stub (`kbb -M:dev:run` prints \"not yet implemented\"), so there
   was no seeded store to reuse either. This namespace therefore carries
   its own scenario fixture and drives the REAL actor stack over it:
 
@@ -44,7 +44,7 @@
   over time; the raw epoch values are never rendered, only the derived
   current/overdue status. Two consecutive runs are byte-identical.
 
-  Usage: `clojure -M:dev:render-html [out-file]`
+  Usage: `kbb -M:dev:render-html [out-file]`
   (default `docs/samples/operator-console.html`)."
   (:require [clojure.java.io :as io]
             [kotoba.lang.text :as str]
@@ -663,7 +663,7 @@
 
      "  <section class=\"card\">\n"
      "    <h2>Propagation batches</h2>\n"
-     "    <p class=\"muted\">Build-time snapshot, generated from <code>propagation.store</code> by <code>propagation.render-html</code> (<code>clojure -M:dev:render-html</code>). Every threshold comparison below is recomputed through <code>propagation.facts</code> / <code>propagation.registry</code> — the same lookups the Governor used when it ruled on these batches.</p>\n"
+     "    <p class=\"muted\">Build-time snapshot, generated from <code>propagation.store</code> by <code>propagation.render-html</code> (<code>kbb -M:dev:render-html</code>). Every threshold comparison below is recomputed through <code>propagation.facts</code> / <code>propagation.registry</code> — the same lookups the Governor used when it ruled on these batches.</p>\n"
      "    <table>\n"
      "      <thead><tr><th>Batch</th><th>Propagation method</th><th>Jurisdiction</th><th>Rooting/take rate</th><th>Hardening-off</th><th>Sanitation</th><th>Phytosanitary &amp; fidelity</th><th>Lifecycle</th></tr></thead>\n"
      "      <tbody>\n"
@@ -731,7 +731,7 @@
      "<footer>\n"
      "  <p>" (count trace) " proposals · " (count ledger) " audit facts · "
      (count hard-holds) " hard holds · " (count batch-order) " registered batches.\n"
-     "  Regenerate with <code>clojure -M:dev:render-html docs/samples/operator-console.html</code>.</p>\n"
+     "  Regenerate with <code>kbb -M:dev:render-html docs/samples/operator-console.html</code>.</p>\n"
      "</footer>\n"
      "</body></html>\n")))
 
