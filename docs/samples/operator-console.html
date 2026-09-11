@@ -2468,7 +2468,7 @@ img,svg { max-width: 100%; height: auto; }</style></head><body>
 <main>
   <section class="card">
     <h2>Propagation batches</h2>
-    <p class="muted">Build-time snapshot, generated from <code>propagation.store</code> by <code>propagation.render-html</code> (<code>clojure -M:dev:render-html</code>). Every threshold comparison below is recomputed through <code>propagation.facts</code> / <code>propagation.registry</code> — the same lookups the Governor used when it ruled on these batches.</p>
+    <p class="muted">Build-time snapshot, generated from <code>propagation.store</code> by <code>propagation.render-html</code> (<code>kbb -M:dev:render-html</code>). Every threshold comparison below is recomputed through <code>propagation.facts</code> / <code>propagation.registry</code> — the same lookups the Governor used when it ruled on these batches.</p>
     <table>
       <thead><tr><th>Batch</th><th>Propagation method</th><th>Jurisdiction</th><th>Rooting/take rate</th><th>Hardening-off</th><th>Sanitation</th><th>Phytosanitary &amp; fidelity</th><th>Lifecycle</th></tr></thead>
       <tbody>
@@ -2591,6 +2591,6 @@ img,svg { max-width: 100%; height: auto; }</style></head><body>
 </main>
 <footer>
   <p>16 proposals · 21 audit facts · 11 hard holds · 6 registered batches.
-  Regenerate with <code>clojure -M:dev:render-html docs/samples/operator-console.html</code>.</p>
+  Regenerate with <code>kbb -M:dev:render-html docs/samples/operator-console.html</code>.</p>
 </footer>
 </body></html>
