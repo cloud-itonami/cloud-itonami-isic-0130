@@ -1,5 +1,5 @@
 (ns propagation.facts-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [propagation.facts :as facts]))
 
 ;; ──────────────────────── Propagation Method Lookups ──────────────────────

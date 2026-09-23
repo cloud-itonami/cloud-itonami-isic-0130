@@ -1,5 +1,5 @@
 (ns propagation.store-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [propagation.store :as store]))
 
 ;; ──────────────────────── Batch Retrieval ──────────────────────
