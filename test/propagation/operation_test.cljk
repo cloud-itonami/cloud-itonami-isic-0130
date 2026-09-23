@@ -1,5 +1,5 @@
 (ns propagation.operation-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [propagation.operation :as operation]
             [propagation.governor :as governor]))
 

@@ -1,5 +1,5 @@
 (ns propagation.phase-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [propagation.phase :as phase]))
 
 ;; ──────────────────────── Phase Validity ──────────────────────
