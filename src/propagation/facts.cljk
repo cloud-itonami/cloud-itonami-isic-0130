@@ -19,7 +19,7 @@
   type, correct rootstock/scion identity, no somaclonal variation), and
   the dominant regulatory hazard is PHYTOSANITARY (pest/pathogen spread
   via nursery stock movement), not food-safety."
-  (:require [clojure.set :as set]))
+  (:require [kotoba.lang.coll :as set]))
 
 (def propagation-method-types
   "Valid propagation-method categories and their safe viability/readiness
